@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Smart Agri Assistant{% endblock %}</title>
+  <meta name="description" content="{% block description %}An end-to-end intelligent agriculture decision support system for Indian farmers.{% endblock %}"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-icon">🌾</span>
+      <div>
+        <div class="logo-text">AgroSense AI</div>
+        <div class="logo-sub">Smart Agriculture Assistant</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <div class="nav-section-label" style="margin-top:10px">Predictions</div>
+      <a href="/crop" class="nav-item {% if request.path == '/crop' %}active{% endif %}">
+        <span class="nav-icon">🌱</span> Crop Recommendation
+      </a>
+      <a href="/yield" class="nav-item {% if request.path == '/yield' %}active{% endif %}">
+        <span class="nav-icon">📊</span> Yield Prediction
+      </a>
+      <a href="/disease" class="nav-item {% if request.path == '/disease' %}active{% endif %}">
+        <span class="nav-icon">🔬</span> Disease Detection
+      </a>
+      <div class="nav-section-label" style="margin-top:10px">Real-time</div>
+      <a href="/weather" class="nav-item {% if request.path == '/weather' %}active{% endif %}">
+        <span class="nav-icon">🌦</span> Weather Insights
+      </a>
+      <a href="/history" class="nav-item {% if request.path == '/history' %}active{% endif %}">
+        <span class="nav-icon">📋</span> Prediction History
+      </a>
+    </nav>
+    <div class="sidebar-footer">AgroSense AI v1.0 &nbsp;·&nbsp; Kerala, India</div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="/static/js/main.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

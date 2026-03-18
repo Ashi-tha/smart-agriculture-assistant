@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Disease Detection — AgroSense AI{% endblock %}
+{% block description %}Upload a leaf photo for AI-powered plant disease detection.{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🔬 Plant Disease <span>Detection</span></h1>
+  <p>Upload a photo of a plant leaf — our CNN model will identify diseases and suggest treatment.</p>
+</div>
+<div class="container">
+  <div class="card" style="max-width:700px">
+    <div class="info-tip">📸 Supported plants: Rice, Tomato, Potato, Maize, Apple, Grape. Supports JPG, PNG, WEBP (max 5MB). <br>For best results, photograph a single infected leaf against a neutral background.</div>
+
+    <div id="uploadZone" class="upload-zone">
+      <input type="file" id="imageInput" name="image" accept="image/jpeg,image/png,image/webp"/>
+      <div class="upload-icon">🌿</div>
+      <div class="upload-text"><strong>Click or drop</strong> a leaf image here</div>
+      <div class="upload-meta">Accepted: JPG, PNG, WEBP · Max 5MB</div>
+    </div>
+
+    <div id="previewBox" class="hidden" style="margin-top:20px; text-align:center">
+      <img id="previewImg" class="preview-img" src="" alt="Leaf preview"/>
+      <div style="margin-top:12px; font-size:0.85rem; color:var(--text-muted)" id="previewName"></div>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap">
+      <button id="detectBtn" class="btn btn-primary btn-lg" disabled>
+        <span>🔍</span> Detect Disease
+      </button>
+      <button id="clearBtn" class="btn btn-outline hidden" onclick="clearUpload()">✕ Clear</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="resultSection" class="result-section hidden">
+    <div id="errorBox" class="hidden" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:16px;color:var(--red);margin-bottom:16px"></div>
+    <div id="loader" class="loader-wrap hidden"><div class="loader"></div><div class="loader-text">Analysing leaf image…</div></div>
+    <div id="diseaseResult" class="hidden">
+      <div id="demoBanner" class="hidden" style="margin-bottom:16px">
+        <span class="demo-badge">⚠️ Demo Mode — Upload disease_model.h5 to models/ for full CNN inference</span>
+      </div>
+      <div class="card">
+        <div class="disease-result-card">
+          <div>
+            <img id="resultImg" class="disease-img" src="" alt="Analysed leaf"/>
+          </div>
+          <div class="disease-info">
+            <div id="healthyBadge" class="hidden"><span class="badge badge-green" style="margin-bottom:12px">✓ Plant is Healthy</span></div>
+            <div id="diseasedBadge" class="hidden"><span id="severityBadge" class="badge" style="margin-bottom:12px"></span></div>
+            <div class="disease-plant" id="plantName"></div>
+            <h2 id="diseaseName"></h2>
+            <div class="disease-confidence" id="confScore">0<span>% confidence</span></div>
+            <div class="treatment-box">
+              <strong>💊 Recommended Treatment</strong>
+              <span id="treatmentText"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedFile = null;
+const imageInput  = document.getElementById('imageInput');
+const detectBtn   = document.getElementById('detectBtn');
+const clearBtn    = document.getElementById('clearBtn');
+const uploadZone  = document.getElementById('uploadZone');
+const previewBox  = document.getElementById('previewBox');
+const previewImg  = document.getElementById('previewImg');
+const previewName = document.getElementById('previewName');
+
+imageInput.addEventListener('change', (e) => {
+  selectedFile = e.target.files[0];
+  if (selectedFile) showPreview(selectedFile);
+});
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) { selectedFile = f; showPreview(f); }
+});
+
+function showPreview(file) {
+  const url = URL.createObjectURL(file);
+  previewImg.src = url;
+  previewName.textContent = `📂 ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  previewBox.classList.remove('hidden');
+  detectBtn.disabled = false;
+  clearBtn.classList.remove('hidden');
+}
+
+function clearUpload() {
+  selectedFile = null;
+  imageInput.value = '';
+  previewBox.classList.add('hidden');
+  document.getElementById('resultSection').classList.add('hidden');
+  detectBtn.disabled = true;
+  clearBtn.classList.add('hidden');
+}
+
+detectBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  detectBtn.disabled = true; detectBtn.innerHTML = '<span>⏳</span> Analysing…';
+  document.getElementById('resultSection').classList.remove('hidden');
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('diseaseResult').classList.add('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+
+  const formData = new FormData();
+  formData.append('image', selectedFile);
+
+  try {
+    const res = await fetch('/api/disease', { method:'POST', body: formData });
+    const data = await res.json();
+    document.getElementById('loader').classList.add('hidden');
+
+    if (!data.success) {
+      const eb = document.getElementById('errorBox');
+      eb.innerHTML = '⚠️ ' + data.errors.join('<br>');
+      eb.classList.remove('hidden');
+    } else {
+      document.getElementById('diseaseResult').classList.remove('hidden');
+      renderDisease(data);
+    }
+  } catch(err) {
+    document.getElementById('loader').classList.add('hidden');
+    const eb = document.getElementById('errorBox');
+    eb.textContent = 'Network error — make sure Flask is running.';
+    eb.classList.remove('hidden');
+  } finally {
+    detectBtn.disabled = false; detectBtn.innerHTML = '<span>🔍</span> Detect Disease';
+  }
+});
+
+function renderDisease(data) {
+  if (data.demo_mode) document.getElementById('demoBanner').classList.remove('hidden');
+  document.getElementById('resultImg').src    = data.image_url;
+  document.getElementById('plantName').textContent = '🌿 Plant: ' + data.plant;
+  document.getElementById('diseaseName').textContent = data.disease.replace(/_/g,' ');
+  document.getElementById('confScore').innerHTML = `${data.confidence}<span>% confidence</span>`;
+  document.getElementById('treatmentText').textContent = data.treatment;
+
+  if (data.is_healthy) {
+    document.getElementById('healthyBadge').classList.remove('hidden');
+    document.getElementById('diseasedBadge').classList.add('hidden');
+  } else {
+    document.getElementById('healthyBadge').classList.add('hidden');
+    const sb = document.getElementById('severityBadge');
+    sb.textContent = `⚠️ Severity: ${data.severity}`;
+    const cls = data.severity === 'High' ? 'badge-red' : data.severity === 'Medium' ? 'badge-yellow' : 'badge-blue';
+    sb.className = `badge ${cls}`;
+    document.getElementById('diseasedBadge').classList.remove('hidden');
+  }
+}
+</script>
+{% endblock %}

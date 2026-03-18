@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Crop Recommendation — AgroSense AI{% endblock %}
+{% block description %}ML-powered crop recommendation based on soil and climate conditions.{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🌱 <span>Crop</span> Recommendation</h1>
+  <p>Enter your soil and climate data — our Random Forest model will suggest the best crops for your field.</p>
+</div>
+<div class="container">
+  <div class="card" style="max-width:800px">
+    <div class="info-tip">Enter values from your <strong>soil test report</strong>. Temperature and rainfall are for your local area.</div>
+    <form id="cropForm">
+      <div class="section-title">Soil Nutrients (kg/ha)</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Nitrogen (N) <span>(0–150)</span></label>
+          <input type="number" id="N" name="N" class="form-input" placeholder="e.g. 90" min="0" max="150" step="0.1" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phosphorus (P) <span>(0–150)</span></label>
+          <input type="number" id="P" name="P" class="form-input" placeholder="e.g. 42" min="0" max="150" step="0.1" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Potassium (K) <span>(0–210)</span></label>
+          <input type="number" id="K" name="K" class="form-input" placeholder="e.g. 43" min="0" max="210" step="0.1" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Soil pH <span>(0–14)</span></label>
+          <input type="number" id="ph" name="ph" class="form-input" placeholder="e.g. 6.5" min="0" max="14" step="0.01" required/>
+        </div>
+      </div>
+      <div class="section-title" style="margin-top:24px">Climate Conditions</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Temperature <span>(°C)</span></label>
+          <input type="number" id="temperature" name="temperature" class="form-input" placeholder="e.g. 25" min="0" max="50" step="0.1" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Humidity <span>(%)</span></label>
+          <input type="number" id="humidity" name="humidity" class="form-input" placeholder="e.g. 80" min="0" max="100" step="0.1" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rainfall <span>(mm/year)</span></label>
+          <input type="number" id="rainfall" name="rainfall" class="form-input" placeholder="e.g. 202" min="0" max="400" step="0.1" required/>
+        </div>
+      </div>
+
+      <div style="margin-top:4px; margin-bottom:20px; font-size:0.8rem; color:var(--text-dim)">
+        💡 Try a rice profile: N=90, P=42, K=43, pH=6.5, Temp=25, Humidity=82, Rainfall=202
+      </div>
+
+      <div style="display:flex; gap:12px; flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+          <span>🔍</span> Analyse &amp; Recommend
+        </button>
+        <button type="button" class="btn btn-outline" onclick="fillSample()">Load Sample Data</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Result Section -->
+  <div id="resultSection" class="result-section hidden">
+    <div class="section-title">Recommendation Results</div>
+
+    <div id="errorBox" class="hidden" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:16px;color:var(--red);margin-bottom:16px"></div>
+
+    <div id="resultsContent" class="hidden">
+      <div id="topLabel" class="top-label">🏆 Best Match</div>
+      <div id="resultsGrid" class="result-grid"></div>
+      <div class="reasoning-box" id="reasoningBox">
+        <h4>📊 Input Summary</h4>
+        <div id="reasoningGrid" class="reasoning-grid"></div>
+      </div>
+    </div>
+
+    <div id="loader" class="loader-wrap hidden">
+      <div class="loader"></div>
+      <div class="loader-text">Analysing soil and climate data…</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fillSample() {
+  document.getElementById('N').value = 90;
+  document.getElementById('P').value = 42;
+  document.getElementById('K').value = 43;
+  document.getElementById('ph').value = 6.5;
+  document.getElementById('temperature').value = 25;
+  document.getElementById('humidity').value = 82;
+  document.getElementById('rainfall').value = 202;
+}
+
+document.getElementById('cropForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span>⏳</span> Analysing…';
+
+  document.getElementById('resultSection').classList.remove('hidden');
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('resultsContent').classList.add('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+
+  const body = {
+    N:           parseFloat(document.getElementById('N').value),
+    P:           parseFloat(document.getElementById('P').value),
+    K:           parseFloat(document.getElementById('K').value),
+    ph:          parseFloat(document.getElementById('ph').value),
+    temperature: parseFloat(document.getElementById('temperature').value),
+    humidity:    parseFloat(document.getElementById('humidity').value),
+    rainfall:    parseFloat(document.getElementById('rainfall').value),
+  };
+
+  try {
+    const res = await fetch('/api/crop', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    document.getElementById('loader').classList.add('hidden');
+
+    if (!data.success) {
+      const eb = document.getElementById('errorBox');
+      eb.innerHTML = '⚠️ ' + (data.errors || ['Unknown error']).join('<br>');
+      eb.classList.remove('hidden');
+    } else {
+      document.getElementById('resultsContent').classList.remove('hidden');
+      renderResults(data);
+    }
+  } catch(err) {
+    document.getElementById('loader').classList.add('hidden');
+    const eb = document.getElementById('errorBox');
+    eb.textContent = 'Network error — make sure Flask is running.';
+    eb.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<span>🔍</span> Analyse &amp; Recommend';
+  }
+});
+
+function renderResults(data) {
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+  data.recommendations.forEach((r, i) => {
+    const card = document.createElement('div');
+    card.className = 'result-card' + (i === 0 ? ' top-pick' : '');
+    card.innerHTML = `
+      ${i === 0 ? '<div class="top-label">🏆 Best Match</div>' : ''}
+      <div class="result-crop-emoji">${r.emoji}</div>
+      <div class="result-crop-name">${r.crop}</div>
+      <div class="result-confidence">${r.confidence}<span>%</span></div>
+      <div style="font-size:0.72rem;color:var(--text-dim);margin-bottom:8px">confidence</div>
+      <div class="result-meta">
+        <div>📅 <strong>${r.season}</strong></div>
+        <div>💧 Water: <strong>${r.water_need}</strong></div>
+        <div>🪨 Soil: <strong>${r.soil_type}</strong></div>
+      </div>
+      ${i === 0 ? '<div style="margin-top:10px"><span class="badge badge-green">✓ Recommended</span></div>' : ''}
+    `;
+    grid.appendChild(card);
+  });
+
+  const rg = document.getElementById('reasoningGrid');
+  rg.innerHTML = Object.values(data.reasoning).map(v =>
+    `<div class="reasoning-item"><div class="reasoning-dot"></div>${v}</div>`
+  ).join('');
+}
+</script>
+{% endblock %}

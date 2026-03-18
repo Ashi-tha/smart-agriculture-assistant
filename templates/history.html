@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Prediction History — AgroSense AI{% endblock %}
+{% block description %}View all past crop, yield, and disease predictions.{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="flex-between">
+    <div>
+      <h1>📋 Prediction <span>History</span></h1>
+      <p>All previous predictions stored locally — track your field analysis over time.</p>
+    </div>
+    <button id="clearAllBtn" class="btn btn-danger" style="white-space:nowrap">🗑 Clear All</button>
+  </div>
+</div>
+<div class="container">
+  <div id="loader" class="loader-wrap"><div class="loader"></div><div class="loader-text">Loading history…</div></div>
+
+  <div id="emptyState" class="empty-state hidden">
+    <div class="empty-icon">📭</div>
+    <h3>No predictions yet</h3>
+    <p>Use the Crop, Yield, or Disease tools and your results will appear here.</p>
+    <div style="margin-top:16px; display:flex; gap:10px; justify-content:center">
+      <a href="/crop" class="btn btn-primary">🌱 Try Crop Recommendation</a>
+      <a href="/disease" class="btn btn-outline">🔬 Try Disease Detection</a>
+    </div>
+  </div>
+
+  <div id="historyTable" class="hidden">
+    <div class="stats-grid" style="margin-bottom:24px">
+      <div class="stat-card"><span class="stat-icon">📊</span><div class="stat-value" id="totalCount">0</div><div class="stat-label">Total Predictions</div></div>
+      <div class="stat-card"><span class="stat-icon">🌱</span><div class="stat-value" id="cropCount">0</div><div class="stat-label">Crop Recommendations</div></div>
+      <div class="stat-card"><span class="stat-icon">📈</span><div class="stat-value" id="yieldCount">0</div><div class="stat-label">Yield Predictions</div></div>
+      <div class="stat-card"><span class="stat-icon">🔬</span><div class="stat-value" id="diseaseCount">0</div><div class="stat-label">Disease Detections</div></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Type</th><th>Key Result</th><th>Details</th><th>Date &amp; Time</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadHistory() {
+  try {
+    const res = await fetch('/api/history?limit=100');
+    const data = await res.json();
+    document.getElementById('loader').classList.add('hidden');
+
+    if (!data.success || data.count === 0) {
+      document.getElementById('emptyState').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('historyTable').classList.remove('hidden');
+    renderTable(data.records);
+  } catch(err) {
+    document.getElementById('loader').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
+  }
+}
+
+function renderTable(records) {
+  document.getElementById('totalCount').textContent  = records.length;
+  document.getElementById('cropCount').textContent   = records.filter(r=>r.type==='crop').length;
+  document.getElementById('yieldCount').textContent  = records.filter(r=>r.type==='yield').length;
+  document.getElementById('diseaseCount').textContent= records.filter(r=>r.type==='disease').length;
+
+  const body = document.getElementById('historyBody');
+  body.innerHTML = '';
+  records.forEach((r, i) => {
+    const typeClass = { crop:'type-crop', yield:'type-yield', disease:'type-disease' }[r.type] || 'type-crop';
+    const typeLabel = { crop:'🌱 Crop', yield:'📊 Yield', disease:'🔬 Disease' }[r.type] || r.type;
+
+    let keyResult = '';
+    let details   = '';
+    if (r.type === 'crop') {
+      keyResult = `<strong style="color:var(--primary);text-transform:capitalize">${r.result.best_crop || '—'}</strong>`;
+      details = (r.result.top3 || []).join(', ');
+    } else if (r.type === 'yield') {
+      keyResult = `<strong style="color:var(--primary)">${(r.result.yield_per_hectare || 0).toLocaleString()} kg/ha</strong>`;
+      details = `Total: ${(r.result.total_yield || 0).toLocaleString()} kg`;
+    } else if (r.type === 'disease') {
+      const disease = r.result.disease || '—';
+      keyResult = `<strong style="color:var(--red);text-transform:capitalize">${disease}</strong>`;
+      details = `${r.result.plant || ''} · ${r.result.confidence || 0}% confidence`;
+    }
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td style="color:var(--text-dim)">#${records.length - i}</td>
+      <td><span class="type-chip ${typeClass}">${typeLabel}</span></td>
+      <td>${keyResult}</td>
+      <td style="color:var(--text-dim);font-size:0.8rem">${details}</td>
+      <td style="font-size:0.8rem">${r.created_at}</td>
+      <td><button class="btn btn-danger" style="padding:4px 10px;font-size:0.78rem" onclick="deleteRecord(${r.id}, this)">✕</button></td>
+    `;
+    body.appendChild(row);
+  });
+}
+
+async function deleteRecord(id, btn) {
+  btn.disabled = true;
+  try {
+    await fetch(`/api/history/${id}`, { method: 'DELETE' });
+    const row = btn.closest('tr');
+    row.style.opacity = '0'; row.style.transition = 'opacity 0.3s';
+    setTimeout(() => { row.remove(); }, 300);
+  } catch(e) { btn.disabled = false; }
+}
+
+document.getElementById('clearAllBtn').addEventListener('click', async () => {
+  if (!confirm('Delete all prediction history? This cannot be undone.')) return;
+  const res = await fetch('/api/history?limit=1000');
+  const data = await res.json();
+  await Promise.all(data.records.map(r => fetch(`/api/history/${r.id}`, { method:'DELETE' })));
+  location.reload();
+});
+
+loadHistory();
+</script>
+{% endblock %}

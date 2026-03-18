@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Yield Prediction — AgroSense AI{% endblock %}
+{% block description %}Predict crop yield in kg/hectare using XGBoost regression.{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📊 Crop Yield <span>Prediction</span></h1>
+  <p>XGBoost regression model predicts expected yield based on crop type, area, weather, and fertilizer data.</p>
+</div>
+<div class="container">
+  <div class="card" style="max-width:800px">
+    <form id="yieldForm">
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1">
+          <label class="form-label">Crop Type</label>
+          <select id="crop" name="crop" class="form-select" required>
+            <option value="">— Select a crop —</option>
+            {% set crops = ["rice","maize","chickpea","kidneybeans","pigeonpeas","mothbeans","mungbean","blackgram","lentil","pomegranate","banana","mango","grapes","watermelon","muskmelon","apple","orange","papaya","coconut","cotton","jute","coffee"] %}
+            {% for c in crops %}
+            <option value="{{ c }}">{{ c | capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Farm Area <span>(hectares)</span></label>
+          <input type="number" id="area" name="area" class="form-input" placeholder="e.g. 2.5" min="0.1" max="1000" step="0.1" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Annual Rainfall <span>(mm)</span></label>
+          <input type="number" id="rainfall" name="rainfall" class="form-input" placeholder="e.g. 202" min="0" max="500" step="1" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Avg Temperature <span>(°C)</span></label>
+          <input type="number" id="temperature" name="temperature" class="form-input" placeholder="e.g. 26" min="0" max="50" step="0.1" required/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fertilizer Used <span>(kg/ha)</span></label>
+          <input type="number" id="fertilizer" name="fertilizer" class="form-input" placeholder="e.g. 150" min="0" max="500" step="1" required/>
+        </div>
+      </div>
+      <div style="margin-top:4px; margin-bottom:20px; font-size:0.8rem; color:var(--text-dim)">
+        💡 Try: Rice, 2 ha, 200mm rainfall, 26°C, 150 kg fertilizer
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary btn-lg" id="yieldBtn">
+          <span>📈</span> Predict Yield
+        </button>
+        <button type="button" class="btn btn-outline" onclick="fillSample()">Load Sample</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Result -->
+  <div id="resultSection" class="result-section hidden">
+    <div id="errorBox" class="hidden" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:16px;color:var(--red)"></div>
+    <div id="loader" class="loader-wrap hidden"><div class="loader"></div><div class="loader-text">Predicting yield…</div></div>
+    <div id="yieldResult" class="hidden">
+      <div class="yield-hero">
+        <div id="cropEmoji" style="font-size:3rem;margin-bottom:8px"></div>
+        <div id="cropName" style="font-size:1.2rem;font-weight:700;text-transform:capitalize;margin-bottom:4px;color:var(--text-muted)"></div>
+        <div class="yield-number" id="yieldPerHa">0</div>
+        <div class="yield-unit">kg / hectare</div>
+        <div class="yield-total" id="totalYield"></div>
+      </div>
+      <div style="margin-top:20px">
+        <canvas id="yieldChart" height="80"></canvas>
+      </div>
+      <div class="reasoning-box" style="margin-top:20px">
+        <h4>📋 Input Summary</h4>
+        <div id="inputSummary" class="reasoning-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let yieldChart = null;
+function fillSample() {
+  document.getElementById('crop').value = 'rice';
+  document.getElementById('area').value = 2;
+  document.getElementById('rainfall').value = 200;
+  document.getElementById('temperature').value = 26;
+  document.getElementById('fertilizer').value = 150;
+}
+
+document.getElementById('yieldForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('yieldBtn');
+  btn.disabled = true; btn.innerHTML = '<span>⏳</span> Predicting…';
+
+  document.getElementById('resultSection').classList.remove('hidden');
+  document.getElementById('loader').classList.remove('hidden');
+  document.getElementById('yieldResult').classList.add('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+
+  const body = {
+    crop:        document.getElementById('crop').value,
+    area:        parseFloat(document.getElementById('area').value),
+    rainfall:    parseFloat(document.getElementById('rainfall').value),
+    temperature: parseFloat(document.getElementById('temperature').value),
+    fertilizer:  parseFloat(document.getElementById('fertilizer').value),
+  };
+  try {
+    const res = await fetch('/api/yield', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    document.getElementById('loader').classList.add('hidden');
+
+    if (!data.success) {
+      const eb = document.getElementById('errorBox');
+      eb.innerHTML = '⚠️ ' + data.errors.join('<br>');
+      eb.classList.remove('hidden');
+    } else {
+      document.getElementById('yieldResult').classList.remove('hidden');
+      renderYield(data);
+    }
+  } catch(err) {
+    document.getElementById('loader').classList.add('hidden');
+    const eb = document.getElementById('errorBox');
+    eb.textContent = 'Network error — make sure Flask is running.';
+    eb.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<span>📈</span> Predict Yield';
+  }
+});
+
+function renderYield(data) {
+  document.getElementById('cropEmoji').textContent  = data.emoji;
+  document.getElementById('cropName').textContent   = data.crop;
+  document.getElementById('yieldPerHa').textContent = data.yield_per_hectare.toLocaleString();
+  document.getElementById('totalYield').innerHTML   =
+    `🌾 Total farm yield: <strong>${data.total_yield.toLocaleString()} kg</strong> from ${data.area} hectares`;
+
+  const summary = data.inputs_summary;
+  document.getElementById('inputSummary').innerHTML = Object.entries(summary).map(([k,v]) =>
+    `<div class="reasoning-item"><div class="reasoning-dot"></div><b>${k.charAt(0).toUpperCase()+k.slice(1)}:</b> ${v}</div>`
+  ).join('');
+
+  // Chart
+  if (yieldChart) yieldChart.destroy();
+  const ctx = document.getElementById('yieldChart').getContext('2d');
+  const refs = { 'Below Average': data.yield_per_hectare * 0.6, 'Your Prediction': data.yield_per_hectare, 'Above Average': data.yield_per_hectare * 1.4 };
+  yieldChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(refs),
+      datasets: [{
+        data: Object.values(refs),
+        backgroundColor: ['rgba(107,143,114,0.3)','rgba(74,222,128,0.7)','rgba(107,143,114,0.3)'],
+        borderColor: ['var(--text-dim)','var(--primary)','var(--text-dim)'],
+        borderWidth: 1, borderRadius: 8,
+      }]
+    },
+    options: {
+      responsive: true, plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${ctx.raw.toLocaleString()} kg/ha` } }
+      },
+      scales: {
+        x: { ticks: { color:'#6b8f72' }, grid: { color:'rgba(74,222,128,0.05)' } },
+        y: { ticks: { color:'#6b8f72', callback: v => v.toLocaleString() + ' kg' }, grid: { color:'rgba(74,222,128,0.05)' } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

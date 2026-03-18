@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Weather Insights — AgroSense AI{% endblock %}
+{% block description %}Real-time weather data with smart irrigation and fertilizer suggestions for farmers.{% endblock
+%}
+{% block content %}
+<div class="page-header">
+  <h1>🌦 Weather <span>Insights</span></h1>
+  <p>Real-time weather conditions with smart agricultural advice — know the best time to irrigate, fertilize, and spray.
+  </p>
+</div>
+<div class="container">
+  <div class="card" style="max-width:700px">
+    <div class="info-tip">
+
+      <br><a href="https://openweathermap.org/api" target="_blank"></a>
+    </div>
+    <div style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap">
+      <div class="form-group" style="flex:1; min-width:200px">
+        <label class="form-label">Your City</label>
+        <input type="text" id="cityInput" class="form-input" placeholder="e.g. Thrissur, Kochi, Palakkad…"
+          maxlength="100" />
+      </div>
+      <button id="weatherBtn" class="btn btn-primary" style="min-width:140px">
+        <span>🔍</span> Get Weather
+      </button>
+    </div>
+    <div style="margin-top:8px; font-size:0.78rem; color:var(--text-dim)">
+      Popular: Thiruvananthapuram · Kochi · Thrissur · Kozhikode · Palakkad
+    </div>
+    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+      {% for city in ["Thrissur","Kochi","Thiruvananthapuram","Kozhikode","Palakkad"] %}
+      <button class="btn btn-outline" style="padding:6px 14px; font-size:0.8rem" onclick="quickCity('{{ city }}')">{{
+        city }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Result Section -->
+  <div id="resultSection" class="result-section hidden">
+    <div id="errorBox" class="hidden"
+      style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:16px;color:var(--red);margin-bottom:16px">
+    </div>
+    <div id="loader" class="loader-wrap hidden">
+      <div class="loader"></div>
+      <div class="loader-text">Fetching weather data…</div>
+    </div>
+    <div id="weatherResult" class="hidden">
+      <!-- Alerts -->
+      <div id="alertStack" class="alert-stack"></div>
+
+      <!-- Hero -->
+      <div class="weather-hero">
+        <div>
+          <div class="weather-city" id="wCity"></div>
+          <div class="weather-desc" id="wDesc"></div>
+          <div class="weather-temp" id="wTemp"></div>
+          <div style="color:var(--text-dim); font-size:0.85rem" id="wFeels"></div>
+        </div>
+        <div>
+          <div class="weather-stats">
+            <div class="weather-stat">
+              <div class="val" id="wHumidity">—</div>
+              <div class="lbl">Humidity %</div>
+            </div>
+            <div class="weather-stat">
+              <div class="val" id="wWind">—</div>
+              <div class="lbl">Wind km/h</div>
+            </div>
+            <div class="weather-stat">
+              <div class="val" id="wRain">—</div>
+              <div class="lbl">Rain mm/hr</div>
+            </div>
+            <div class="weather-stat">
+              <div class="val" id="wVis">—</div>
+              <div class="lbl">Visibility km</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advice Cards -->
+      <div class="section-title" style="margin-top:24px">Smart Agricultural Advice</div>
+      <div class="advice-grid" id="adviceGrid"></div>
+
+      <div id="demoBanner" class="hidden" style="margin-top:16px">
+        <span class="demo-badge">⚠️ Demo Mode — Add API key to .env for live weather</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function quickCity(city) {
+    document.getElementById('cityInput').value = city;
+    fetchWeather();
+  }
+
+  document.getElementById('weatherBtn').addEventListener('click', fetchWeather);
+  document.getElementById('cityInput').addEventListener('keydown', e => { if (e.key === 'Enter') fetchWeather(); });
+
+  async function fetchWeather() {
+    const city = document.getElementById('cityInput').value.trim();
+    if (!city) return;
+    const btn = document.getElementById('weatherBtn');
+    btn.disabled = true; btn.innerHTML = '<span>⏳</span> Loading…';
+
+    document.getElementById('resultSection').classList.remove('hidden');
+    document.getElementById('loader').classList.remove('hidden');
+    document.getElementById('weatherResult').classList.add('hidden');
+    document.getElementById('errorBox').classList.add('hidden');
+
+    try {
+      const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+      const data = await res.json();
+      document.getElementById('loader').classList.add('hidden');
+
+      if (!data.success) {
+        const eb = document.getElementById('errorBox');
+        eb.innerHTML = '⚠️ ' + data.errors.join('<br>');
+        eb.classList.remove('hidden');
+      } else {
+        document.getElementById('weatherResult').classList.remove('hidden');
+        renderWeather(data);
+      }
+    } catch (err) {
+      document.getElementById('loader').classList.add('hidden');
+      const eb = document.getElementById('errorBox');
+      eb.textContent = 'Network error — make sure Flask is running.';
+      eb.classList.remove('hidden');
+    } finally {
+      btn.disabled = false; btn.innerHTML = '<span>🔍</span> Get Weather';
+    }
+  }
+
+  function renderWeather(data) {
+    document.getElementById('wCity').innerHTML = `${data.city}, ${data.country} 📍`;
+    document.getElementById('wDesc').textContent = data.description;
+    document.getElementById('wTemp').textContent = data.temp + '°C';
+    document.getElementById('wFeels').textContent = `Feels like ${data.feels_like}°C`;
+    document.getElementById('wHumidity').textContent = data.humidity + '%';
+    document.getElementById('wWind').textContent = (data.wind_speed * 3.6).toFixed(1);
+    document.getElementById('wRain').textContent = data.rainfall_1h;
+    document.getElementById('wVis').textContent = data.visibility;
+
+    if (data.demo_mode) document.getElementById('demoBanner').classList.remove('hidden');
+    if (data.key_pending) {
+      const banner = document.getElementById('demoBanner');
+      banner.innerHTML = '<span class="demo-badge">⏳ API key activating — OpenWeatherMap keys take up to 2 hours to go live. Showing demo data for now.</span>';
+      banner.classList.remove('hidden');
+    }
+
+    // Alerts
+    const alertStack = document.getElementById('alertStack');
+    alertStack.innerHTML = '';
+    (data.alerts || []).forEach(a => {
+      const el = document.createElement('div');
+      el.className = `alert-banner alert-${a.level}`;
+      el.textContent = a.msg;
+      alertStack.appendChild(el);
+    });
+
+    // Advice
+    const adviceGrid = document.getElementById('adviceGrid');
+    adviceGrid.innerHTML = '';
+    const advice = data.advice || {};
+    [{ key: 'irrigation', label: 'Irrigation' }, { key: 'fertilizer', label: 'Fertilizer' }, { key: 'pest', label: 'Pest Risk' }].forEach(({ key, label }) => {
+      const a = advice[key];
+      if (!a) return;
+      const card = document.createElement('div');
+      card.className = 'advice-card';
+      card.innerHTML = `
+      <div class="advice-header">
+        <span class="advice-icon">${a.icon}</span>
+        <div>
+          <div class="advice-action status-${a.status}">${a.action}</div>
+          <div style="font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px">${label}</div>
+        </div>
+      </div>
+      <div class="advice-reason">${a.reason}</div>
+    `;
+      adviceGrid.appendChild(card);
+    });
+  }
+</script>
+{% endblock %}

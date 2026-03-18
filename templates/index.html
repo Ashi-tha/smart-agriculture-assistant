@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}AgroSense AI — Smart Agriculture Dashboard{% endblock %}
+{% block content %}
+<div class="hero">
+  <div class="hero-bg-text">🌾</div>
+  <div class="hero-eyebrow">AI-Powered Agriculture Intelligence</div>
+  <h1>Smarter Farming,<br><span class="highlight">Better Harvests</span></h1>
+  <p class="hero-desc">An end-to-end intelligent agriculture decision support system integrating ML models with real-time weather APIs — tailored for Kerala's farming conditions.</p>
+  <div class="hero-cta">
+    <a href="/crop" class="btn btn-primary btn-lg">🌱 Crop Recommendation</a>
+    <a href="/disease" class="btn btn-outline btn-lg">🔬 Disease Detection</a>
+  </div>
+
+  <div class="feature-cards">
+    <a href="/crop" class="feature-card" style="text-decoration:none; color:inherit">
+      <div class="feature-card-icon">🌱</div>
+      <h3>Crop Recommendation</h3>
+      <p>ML-powered crop suggestions based on soil NPK, pH, temperature, and rainfall.</p>
+    </a>
+    <a href="/yield" class="feature-card" style="text-decoration:none; color:inherit">
+      <div class="feature-card-icon">📊</div>
+      <h3>Yield Prediction</h3>
+      <p>XGBoost regression model estimates kg/hectare yield before you plant.</p>
+    </a>
+    <a href="/disease" class="feature-card" style="text-decoration:none; color:inherit">
+      <div class="feature-card-icon">🔬</div>
+      <h3>Disease Detection</h3>
+      <p>Upload a leaf photo — CNN model identifies disease with treatment advice.</p>
+    </a>
+    <a href="/weather" class="feature-card" style="text-decoration:none; color:inherit">
+      <div class="feature-card-icon">🌦</div>
+      <h3>Weather Insights</h3>
+      <p>Real-time weather for your location with irrigation and fertilizer timing advice.</p>
+    </a>
+  </div>
+</div>
+
+<div class="container" style="padding-top:0">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">🌿</span>
+      <div class="stat-value">22</div>
+      <div class="stat-label">Supported Crop Types</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🦠</span>
+      <div class="stat-value">23</div>
+      <div class="stat-label">Detectable Plant Diseases</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🎯</span>
+      <div class="stat-value">~95%</div>
+      <div class="stat-label">Crop Model Accuracy</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">⚡</span>
+      <div class="stat-value">Real-Time</div>
+      <div class="stat-label">Weather Data Updates</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
