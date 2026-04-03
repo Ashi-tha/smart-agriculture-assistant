@@ -60,7 +60,12 @@
 
   <!-- Result Section -->
   <div id="resultSection" class="result-section hidden">
-    <div class="section-title">Recommendation Results</div>
+    <div class="flex-between" style="margin-bottom: 16px;">
+      <div class="section-title" style="margin-bottom: 0;">Recommendation Results</div>
+      <button class="btn btn-outline tts-btn" onclick="speakElement('resultsContent')" style="padding: 6px 12px; font-size: 0.8rem;">
+        🔊 Read Section
+      </button>
+    </div>
 
     <div id="errorBox" class="hidden" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:16px;color:var(--red);margin-bottom:16px"></div>
 

@@ -17,7 +17,7 @@
     <div class="sidebar-logo">
       <span class="logo-icon">🌾</span>
       <div>
-        <div class="logo-text">AgroSense AI</div>
+        <div class="logo-text">AgriSense</div>
         <div class="logo-sub">Smart Agriculture Assistant</div>
       </div>
     </div>
@@ -43,9 +43,27 @@
       <a href="/history" class="nav-item {% if request.path == '/history' %}active{% endif %}">
         <span class="nav-icon">📋</span> Prediction History
       </a>
+      <a href="/market" class="nav-item {% if request.path == '/market' %}active{% endif %}">
+        <span class="nav-icon">💹</span> Market Insights
+      </a>
+      <a href="/analytics" class="nav-item {% if request.path == '/analytics' %}active{% endif %}">
+        <span class="nav-icon">🔍</span> Crop Analytics
+      </a>
+      <div class="nav-section-label" style="margin-top:10px">Account</div>
+      {% if current_user %}
+      <div class="sidebar-user">
+        <span class="nav-icon">👤</span>
+        <span class="sidebar-user-name" title="{{ current_user.username }}">{{ current_user.username }}</span>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="sidebar-logout-form">
+        <button type="submit" class="nav-item nav-item-button"><span class="nav-icon">⏻</span> Log out</button>
+      </form>
+      {% else %}
+      <a href="{{ url_for('auth.login') }}" class="nav-item"><span class="nav-icon">🔐</span> Sign in</a>
+      {% endif %}
     </nav>
     <div class="sidebar-footer">
-      <div style="font-size: 0.75rem; color: var(--text-dim);">AgroSense AI v1.0 &nbsp;·&nbsp; Kerala, India</div>
+      <div style="font-size: 0.75rem; color: var(--text-dim);">AgriSense v1.0 &nbsp;·&nbsp; India</div>
       
       <!-- Voice & Multilingual Controls -->
       <button id="tts-btn" onclick="toggleTTS()" title="Read page content aloud">🔊 Read Aloud</button>

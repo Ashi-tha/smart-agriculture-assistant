@@ -1,0 +1,42 @@
+[
+  {
+    "username": "farmer1",
+    "password": "4b3bcc3fd4c3c0ac234af3b9fd81c899",
+    "role": "farmer",
+    "full_name": "Rajesh Kumar",
+    "phone": "9876543210",
+    "address": "45 Paddy Lane, Thanjavur, Tamil Nadu - 613001",
+    "land_acres": "4.5",
+    "bank_account": "SBI-XXXX-4521",
+    "crop_types": "Rice, Sugarcane"
+  },
+  {
+    "username": "farmer2",
+    "password": "703ab11d90719bfb50ad4b783e4827f6",
+    "role": "farmer",
+    "full_name": "Meena Devi",
+    "phone": "9123456780",
+    "address": "12 Green Fields Rd, Coimbatore, Tamil Nadu - 641001",
+    "land_acres": "2.8",
+    "bank_account": "PNB-XXXX-8834",
+    "crop_types": "Wheat, Cotton"
+  },
+  {
+    "username": "official1",
+    "password": "07f9ade67e69adf59116282fa26f241e",
+    "role": "official",
+    "full_name": "Dr. S. Venkatesh",
+    "phone": "9988776655",
+    "department": "Agriculture Insurance Division, Govt of Tamil Nadu",
+    "designation": "Senior Inspector"
+  },
+  {
+    "username": "official2",
+    "password": "cd32e53adf2167de4d6880fe938a20e5",
+    "role": "official",
+    "full_name": "Mrs. P. Lakshmi",
+    "phone": "9877665544",
+    "department": "District Agricultural Office, Madurai",
+    "designation": "Field Officer"
+  }
+]

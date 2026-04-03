@@ -53,6 +53,12 @@
   <div id="resultSection" class="result-section hidden">
     <div id="errorBox" class="hidden" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:16px;color:var(--red)"></div>
     <div id="loader" class="loader-wrap hidden"><div class="loader"></div><div class="loader-text">Predicting yield…</div></div>
+    <div class="flex-between" style="margin-bottom: 16px;">
+      <div class="section-title" style="margin-bottom: 0;">Prediction Result</div>
+      <button class="btn btn-outline tts-btn" onclick="speakElement('yieldResult')" style="padding: 6px 12px; font-size: 0.8rem;">
+        🔊 Read Section
+      </button>
+    </div>
     <div id="yieldResult" class="hidden">
       <div class="yield-hero">
         <div id="cropEmoji" style="font-size:3rem;margin-bottom:8px"></div>

@@ -44,7 +44,12 @@
       <div class="loader"></div>
       <div class="loader-text">Fetching weather data…</div>
     </div>
-    <div id="weatherResult" class="hidden">
+      <div class="flex-between" style="margin-bottom: 16px;">
+        <div class="section-title" style="margin-bottom: 0;">Weather Report</div>
+        <button class="btn btn-outline tts-btn" onclick="speakElement('weatherResult')" style="padding: 6px 12px; font-size: 0.8rem;">
+          🔊 Read Section
+        </button>
+      </div>
       <!-- Alerts -->
       <div id="alertStack" class="alert-stack"></div>
 

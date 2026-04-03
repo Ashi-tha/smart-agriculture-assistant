@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Disease Detection — AgroSense AI{% endblock %}
+{% block title %}Disease Detection — AgriSense{% endblock %}
 {% block description %}Upload a leaf photo for AI-powered plant disease detection.{% endblock %}
 {% block content %}
 <div class="page-header">
   <h1>🔬 Plant Disease <span>Detection</span></h1>
-  <p>Upload a photo of a plant leaf — our CNN model will identify diseases and suggest treatment.</p>
+  <p>Upload a photo of a rice leaf — the model classifies rice diseases and suggests treatment.</p>
 </div>
 <div class="container">
   <div class="card" style="max-width:700px">
-    <div class="info-tip">📸 Supported plants: Rice, Tomato, Potato, Maize, Apple, Grape. Supports JPG, PNG, WEBP (max 5MB). <br>For best results, photograph a single infected leaf against a neutral background.</div>
+    <div class="info-tip">📸 Rice only: brown spot, leaf blast, neck blast, or healthy. JPG, PNG, WEBP (max 5MB).</div>
 
     <div id="uploadZone" class="upload-zone">
       <input type="file" id="imageInput" name="image" accept="image/jpeg,image/png,image/webp"/>
@@ -34,16 +34,20 @@
   <div id="resultSection" class="result-section hidden">
     <div id="errorBox" class="hidden" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:16px;color:var(--red);margin-bottom:16px"></div>
     <div id="loader" class="loader-wrap hidden"><div class="loader"></div><div class="loader-text">Analysing leaf image…</div></div>
+    <div class="flex-between" style="margin-bottom: 16px;">
+      <div class="section-title" style="margin-bottom: 0;">Detection Analysis</div>
+      <button class="btn btn-outline tts-btn" onclick="speakElement('diseaseResult')" style="padding: 6px 12px; font-size: 0.8rem;">
+        🔊 Read Section
+      </button>
+    </div>
     <div id="diseaseResult" class="hidden">
-      <div id="demoBanner" class="hidden" style="margin-bottom:16px">
-        <span class="demo-badge">⚠️ Demo Mode — Upload disease_model.h5 to models/ for full CNN inference</span>
-      </div>
       <div class="card">
         <div class="disease-result-card">
           <div>
             <img id="resultImg" class="disease-img" src="" alt="Analysed leaf"/>
           </div>
           <div class="disease-info">
+            <div id="demoBadge" class="hidden"><span class="badge badge-blue" style="margin-bottom:12px">ℹ️ Demo Mode: Simulated Analysis</span></div>
             <div id="healthyBadge" class="hidden"><span class="badge badge-green" style="margin-bottom:12px">✓ Plant is Healthy</span></div>
             <div id="diseasedBadge" class="hidden"><span id="severityBadge" class="badge" style="margin-bottom:12px"></span></div>
             <div class="disease-plant" id="plantName"></div>
@@ -115,12 +119,15 @@ detectBtn.addEventListener('click', async () => {
 
   try {
     const res = await fetch('/api/disease', { method:'POST', body: formData });
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
     document.getElementById('loader').classList.add('hidden');
 
-    if (!data.success) {
+    if (!res.ok || !data || !data.success) {
       const eb = document.getElementById('errorBox');
-      eb.innerHTML = '⚠️ ' + data.errors.join('<br>');
+      const msg = data?.errors?.length
+        ? data.errors.join('<br>')
+        : `Request failed (${res.status}). Please try again.`;
+      eb.innerHTML = '⚠️ ' + msg;
       eb.classList.remove('hidden');
     } else {
       document.getElementById('diseaseResult').classList.remove('hidden');
@@ -137,12 +144,17 @@ detectBtn.addEventListener('click', async () => {
 });
 
 function renderDisease(data) {
-  if (data.demo_mode) document.getElementById('demoBanner').classList.remove('hidden');
   document.getElementById('resultImg').src    = data.image_url;
   document.getElementById('plantName').textContent = '🌿 Plant: ' + data.plant;
   document.getElementById('diseaseName').textContent = data.disease.replace(/_/g,' ');
   document.getElementById('confScore').innerHTML = `${data.confidence}<span>% confidence</span>`;
   document.getElementById('treatmentText').textContent = data.treatment;
+
+  if (data.demo_mode) {
+    document.getElementById('demoBadge').classList.remove('hidden');
+  } else {
+    document.getElementById('demoBadge').classList.add('hidden');
+  }
 
   if (data.is_healthy) {
     document.getElementById('healthyBadge').classList.remove('hidden');

@@ -13,10 +13,7 @@ let utterance;
 
 function toggleTTS() {
   if (isReading) {
-    window.speechSynthesis.cancel();
-    isReading = false;
-    document.getElementById('tts-btn').innerHTML = '🔊 Read Aloud';
-    document.getElementById('tts-btn').classList.remove('reading');
+    stopTTS();
     return;
   }
 
@@ -24,58 +21,86 @@ function toggleTTS() {
   let textToRead = "";
   
   // Try to find prediction results
-  const resultBoxes = document.querySelectorAll('.result-target, .result-card, .disease-card, .metric-card, .weather-card .temp');
+  const resultBoxes = document.querySelectorAll('.result-target, .result-card, .disease-card, .metric-card, .weather-card .temp, .yield-hero, .disease-info, .result-section:not(.hidden)');
   if (resultBoxes.length > 0) {
     resultBoxes.forEach(box => {
-      textToRead += box.innerText + ". ";
-    });
-  } else {
-    // Basic text query if specific cards are not found
-    const resultBoxFallback = document.querySelectorAll('.result-box, .success-box, .alert-box');
-    if(resultBoxFallback.length > 0) {
-      resultBoxFallback.forEach(box => {
+      if (!box.classList.contains('hidden')) {
         textToRead += box.innerText + ". ";
-      });
-    } else {
-      // Read the main content text as fallback
-      const mainContent = document.querySelector('.main-content');
-      if (mainContent) {
-        // get clean text without hidden elements or script tags
-        const clone = mainContent.cloneNode(true);
-        const scripts = clone.querySelectorAll('script, style, button');
-        scripts.forEach(s => s.remove());
-        textToRead = clone.innerText;
       }
+    });
+  }
+  
+  if (!textToRead || !textToRead.trim()) {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      const clone = mainContent.cloneNode(true);
+      const scripts = clone.querySelectorAll('script, style, button, .hidden');
+      scripts.forEach(s => s.remove());
+      textToRead = clone.innerText;
     }
   }
 
   if (!textToRead || !textToRead.trim()) {
-    textToRead = "Hello! Welcome to AgroSense AI. Please navigate the dashboard to view insights.";
+    textToRead = "Hello! Welcome to AgriSense. Please navigate the dashboard to view insights.";
   }
 
-  utterance = new SpeechSynthesisUtterance(textToRead);
+  speakText(textToRead);
+}
+
+function stopTTS() {
+  window.speechSynthesis.cancel();
+  isReading = false;
+  const btns = document.querySelectorAll('.tts-btn, #tts-btn');
+  btns.forEach(btn => {
+    if (btn.id === 'tts-btn') btn.innerHTML = '🔊 Read Aloud';
+    else btn.innerHTML = '🔊 Read Section';
+    btn.classList.remove('reading');
+  });
+}
+
+function speakElement(elementId) {
+  if (isReading) {
+    stopTTS();
+    return;
+  }
+  const el = document.getElementById(elementId);
+  if (!el) return;
   
-  // Detect language naive approach (Hindi characters present?)
-  if (/[\u0900-\u097F]/.test(textToRead)) utterance.lang = 'hi-IN';
-  else if (/[\u0980-\u09FF]/.test(textToRead)) utterance.lang = 'bn-IN';
-  else if (/[\u0C00-\u0C7F]/.test(textToRead)) utterance.lang = 'te-IN';
-  else if (/[\u0B80-\u0BFF]/.test(textToRead)) utterance.lang = 'ta-IN';
-  else utterance.lang = 'en-IN'; // Default to Indian English if available
+  // Clone to remove unwanted elements from speech
+  const clone = el.cloneNode(true);
+  const ignore = clone.querySelectorAll('button, .hidden, script, style');
+  ignore.forEach(i => i.remove());
   
-  utterance.onend = function() {
-    isReading = false;
-    const btn = document.getElementById('tts-btn');
-    if(btn) {
-      btn.innerHTML = '🔊 Read Aloud';
-      btn.classList.remove('reading');
-    }
-  };
+  speakText(clone.innerText);
+}
+
+function speakText(text) {
+  if (!text || !text.trim()) return;
+  
+  window.speechSynthesis.cancel();
+  utterance = new SpeechSynthesisUtterance(text);
+  
+  // Detect language
+  if (/[\u0900-\u097F]/.test(text)) utterance.lang = 'hi-IN';
+  else if (/[\u0980-\u09FF]/.test(text)) utterance.lang = 'bn-IN';
+  else if (/[\u0C00-\u0C7F]/.test(text)) utterance.lang = 'te-IN';
+  else if (/[\u0B80-\u0BFF]/.test(text)) utterance.lang = 'ta-IN';
+  else utterance.lang = 'en-IN';
+  
+  utterance.onend = stopTTS;
+  utterance.onerror = stopTTS;
 
   isReading = true;
-  document.getElementById('tts-btn').innerHTML = '⏹ Stop Reading';
-  document.getElementById('tts-btn').classList.add('reading');
+  // Mark relevant button as reading
+  const globalBtn = document.getElementById('tts-btn');
+  if (globalBtn) {
+    globalBtn.innerHTML = '⏹ Stop';
+    globalBtn.classList.add('reading');
+  }
+  
   window.speechSynthesis.speak(utterance);
 }
+
 
 // Speech to Text (Voice Input for forms)
 document.addEventListener('DOMContentLoaded', () => {

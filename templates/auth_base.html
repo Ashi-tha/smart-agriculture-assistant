@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Sign in — AgroSense AI{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body class="auth-body">
+  <div class="auth-page">
+    <div class="auth-card card">
+      <div class="auth-brand">
+        <span class="logo-icon">🌾</span>
+        <div>
+          <div class="logo-text">AgroSense AI</div>
+          <div class="logo-sub">Smart Agriculture Assistant</div>
+        </div>
+      </div>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="auth-flash-stack">
+            {% for category, message in messages %}
+              <div class="auth-flash auth-flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block auth_content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>

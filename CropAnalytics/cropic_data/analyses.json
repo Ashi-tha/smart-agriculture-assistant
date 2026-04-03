@@ -1,0 +1,134 @@
+[
+  {
+    "record_id": "REC-20260217122557",
+    "timestamp": "2026-02-17  12:25:57",
+    "farmer_username": "farmer1",
+    "farmer_name": "Rajesh Kumar",
+    "farmer_phone": "9876543210",
+    "farmer_address": "45 Paddy Lane, Thanjavur, Tamil Nadu - 613001",
+    "farmer_land": "4.5",
+    "farmer_bank": "SBI-XXXX-4521",
+    "crop_types": "Rice, Sugarcane",
+    "crop_analyzed": "Rice",
+    "growth_stage": "Seedling",
+    "location": [
+      11.341,
+      77.7172
+    ],
+    "validation": {
+      "is_valid": true,
+      "issues": [
+        "Image is blurry (score: 61.27). Try taking a clearer photo."
+      ],
+      "metrics": {
+        "width": 587,
+        "height": 388,
+        "blur_score": 61.27424879341865,
+        "brightness": 101.63914013242241,
+        "contrast": 42.47018378660241,
+        "quality_score": 47.64299503945421
+      }
+    },
+    "prediction": {
+      "predicted_class": "Pest_Disease",
+      "confidence": 0.5845131278038025,
+      "top_3_predictions": [
+        {
+          "class": "Pest_Disease",
+          "confidence": 0.5845131278038025
+        },
+        {
+          "class": "Healthy",
+          "confidence": 0.18026866018772125
+        },
+        {
+          "class": "Drought_Stress",
+          "confidence": 0.15613187849521637
+        }
+      ],
+      "all_probabilities": {
+        "Healthy": 0.18026866018772125,
+        "Pest_Disease": 0.5845131278038025,
+        "Flood_Damage": 0.07908634841442108,
+        "Drought_Stress": 0.15613187849521637
+      }
+    },
+    "verdict": "Pest/Disease damage detected",
+    "insurance_rec": "Partial payout (40-60%) recommended",
+    "verdict_color": "#e65100",
+    "image_size": [
+      587,
+      388
+    ],
+    "official_reviewed": false,
+    "official_notes": "",
+    "approved_amount": "",
+    "reviewed_by": "Dr. S. Venkatesh",
+    "review_date": "2026-02-17 12:29"
+  },
+  {
+    "record_id": "REC-20260226143102",
+    "timestamp": "2026-02-26  14:31:02",
+    "farmer_username": "farmer1",
+    "farmer_name": "Rajesh Kumar",
+    "farmer_phone": "9876543210",
+    "farmer_address": "45 Paddy Lane, Thanjavur, Tamil Nadu - 613001",
+    "farmer_land": "4.5",
+    "farmer_bank": "SBI-XXXX-4521",
+    "crop_types": "Rice, Sugarcane",
+    "crop_analyzed": "Rice",
+    "growth_stage": "Seedling",
+    "location": [
+      11.341,
+      77.7172
+    ],
+    "validation": {
+      "is_valid": true,
+      "issues": [
+        "Image is blurry (score: 61.27). Try taking a clearer photo."
+      ],
+      "metrics": {
+        "width": 587,
+        "height": 388,
+        "blur_score": 61.27424879341865,
+        "brightness": 101.63914013242241,
+        "contrast": 42.47018378660241,
+        "quality_score": 47.64299503945421
+      }
+    },
+    "prediction": {
+      "predicted_class": "Drought_Stress",
+      "confidence": 0.44644495844841003,
+      "top_3_predictions": [
+        {
+          "class": "Drought_Stress",
+          "confidence": 0.44644495844841003
+        },
+        {
+          "class": "Pest_Disease",
+          "confidence": 0.28318822383880615
+        },
+        {
+          "class": "Healthy",
+          "confidence": 0.16792084276676178
+        }
+      ],
+      "all_probabilities": {
+        "Healthy": 0.16792084276676178,
+        "Pest_Disease": 0.28318822383880615,
+        "Flood_Damage": 0.10244591534137726,
+        "Drought_Stress": 0.44644495844841003
+      }
+    },
+    "verdict": "Drought stress detected",
+    "insurance_rec": "Partial payout (30-50%) recommended",
+    "verdict_color": "#e65100",
+    "image_size": [
+      587,
+      388
+    ],
+    "official_reviewed": false,
+    "official_notes": "",
+    "approved_amount": ""
+  }
+]

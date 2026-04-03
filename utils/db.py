@@ -24,8 +24,56 @@ def init_db():
             created_at  TEXT NOT NULL
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            username        TEXT NOT NULL UNIQUE,
+            password_hash   TEXT NOT NULL,
+            created_at      TEXT NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
+
+
+def create_user(username: str, password: str) -> int:
+    from werkzeug.security import generate_password_hash
+
+    pw_hash = generate_password_hash(password)
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        """
+        INSERT INTO users (username, password_hash, created_at)
+        VALUES (?, ?, ?)
+        """,
+        (username.lower(), pw_hash, datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+    )
+    conn.commit()
+    uid = c.lastrowid
+    conn.close()
+    return uid
+
+
+def get_user_by_username(username: str):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        "SELECT id, username, password_hash FROM users WHERE username = ?",
+        (username.lower().strip(),),
+    )
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_user_by_id(user_id: int):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT id, username FROM users WHERE id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 
 def save_prediction(pred_type: str, inputs: dict, result: dict):

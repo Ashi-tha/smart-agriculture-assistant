@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Market Insights — AgriSense{% endblock %}
+
+{% block content %}
+<div class="container animate-in">
+  <div class="hero-section">
+    <div class="hero-bg-text">💹</div>
+    <h1>Market Insights & <span class="highlight">Profitability</span></h1>
+    <p class="hero-desc">Analyze real-time crop price trends across India and get AI recommendations on the best time to sell your harvest.</p>
+  </div>
+
+  <div class="grid grid-2">
+    <!-- Market Form -->
+    <div class="card">
+      <div class="section-title">Market Data Lookup</div>
+      <form id="marketForm" class="stagger-in">
+        <div class="form-group">
+          <label for="crop">Select Crop</label>
+          <select id="crop" name="crop" required>
+            <option value="" disabled selected>Choose a crop...</option>
+            <option value="rice">Rice</option>
+            <option value="maize">Maize</option>
+            <option value="chickpea">Chickpea</option>
+            <option value="kidneybeans">Kidney Beans</option>
+            <option value="pigeonpeas">Pigeon Peas</option>
+            <option value="mothbeans">Moth Beans</option>
+            <option value="mungbean">Mung Bean</option>
+            <option value="blackgram">Blackgram</option>
+            <option value="lentil">Lentil</option>
+            <option value="pomegranate">Pomegranate</option>
+            <option value="banana">Banana</option>
+            <option value="mango">Mango</option>
+            <option value="grapes">Grapes</option>
+            <option value="watermelon">Watermelon</option>
+            <option value="muskmelon">Muskmelon</option>
+            <option value="apple">Apple</option>
+            <option value="orange">Orange</option>
+            <option value="papaya">Papaya</option>
+            <option value="coconut">Coconut</option>
+            <option value="cotton">Cotton</option>
+            <option value="jute">Jute</option>
+            <option value="coffee">Coffee</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="state">Select State / Market Hub</label>
+          <input type="text" id="state" name="state" placeholder="e.g., Pune, Maharashtra" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Analyze Market</button>
+      </form>
+    </div>
+
+    <!-- Market Analysis Result -->
+    <div id="resultSection" class="result-section hidden">
+      <div id="errorBox" class="hidden" style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:16px;color:var(--red);margin-bottom:16px"></div>
+      
+      <div class="flex-between" style="margin-bottom: 16px;">
+        <div class="section-title" style="margin-bottom: 0;">Market Analysis</div>
+        <button class="btn btn-outline tts-btn" onclick="speakElement('marketResult')" style="padding: 6px 12px; font-size: 0.8rem;">
+          🔊 Read Section
+        </button>
+      </div>
+
+      <div id="marketResult" class="hidden">
+        <div class="card" style="margin-bottom: 20px; border-left: 4px solid var(--primary);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <h3 id="resCrop" style="margin: 0; font-size: 1.4rem;"></h3>
+              <p id="resState" style="color: var(--text-dim); margin: 4px 0;"></p>
+            </div>
+            <div style="text-align: right;">
+              <div id="resPrice" style="font-size: 1.8rem; font-weight: 700; color: var(--primary);"></div>
+              <div id="resTrend" style="font-size: 0.9rem; font-weight: 600;"></div>
+            </div>
+          </div>
+          
+          <div id="resInsight" style="margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); font-size: 0.95rem; line-height: 1.5;"></div>
+        </div>
+
+        <div class="card">
+          <div class="section-title" style="font-size: 1rem;">6-Month Price Trend</div>
+          <canvas id="marketChart" style="max-height: 250px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let marketChart = null;
+
+document.getElementById('marketForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+  
+  const resSection = document.getElementById('resultSection');
+  const marketRes = document.getElementById('marketResult');
+  const errorBox = document.getElementById('errorBox');
+  
+  resSection.classList.remove('hidden');
+  marketRes.classList.add('hidden');
+  errorBox.classList.add('hidden');
+  
+  try {
+    const response = await fetch('/api/market', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      document.getElementById('resCrop').innerText = result.crop;
+      document.getElementById('resState').innerText = result.state;
+      document.getElementById('resPrice').innerText = `₹${result.current_price.toLocaleString()}`;
+      
+      const trendEl = document.getElementById('resTrend');
+      trendEl.innerText = `${result.trend === 'up' ? '▲' : '▼'} ${result.change_pct}%`;
+      trendEl.style.color = result.trend === 'up' ? 'var(--green)' : 'var(--red)';
+      
+      const insightEl = document.getElementById('resInsight');
+      insightEl.innerHTML = `
+        <div style="margin-bottom:8px">${result.insight}</div>
+        <div style="font-size:0.75rem; color:var(--text-dim); display:flex; align-items:center; gap:6px">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${result.is_live ? 'var(--green)' : 'var(--yellow)'}"></span>
+          ${result.source}
+        </div>
+      `;
+      
+      marketRes.classList.remove('hidden');
+      
+      // Update Chart
+      const ctx = document.getElementById('marketChart').getContext('2d');
+      if (marketChart) marketChart.destroy();
+      
+      marketChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: result.history_labels,
+          datasets: [{
+            label: 'Price (INR / Quintal)',
+            data: result.history_data,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointBackgroundColor: '#6366f1'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+          }
+        }
+      });
+    } else {
+      errorBox.innerText = result.errors.join(', ');
+      errorBox.classList.remove('hidden');
+    }
+  } catch (err) {
+    errorBox.innerText = "Failed to fetch market data. Please try again.";
+    errorBox.classList.remove('hidden');
+  }
+});
+</script>
+{% endblock %}

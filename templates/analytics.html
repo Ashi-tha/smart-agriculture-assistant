@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Crop Analytics — AgriSense{% endblock %}
+
+{% block content %}
+<div class="container animate-in">
+  <div class="hero-section">
+    <div class="hero-bg-text">🔍</div>
+    <h1>Crop Health <span class="highlight">Analytics</span></h1>
+    <p class="hero-desc">AI-powered image analysis for crop health classification and quality validation.</p>
+  </div>
+
+  <div class="grid grid-2">
+    <!-- Upload Section -->
+    <div class="card">
+      <div class="section-title">Upload Image</div>
+      <form id="analyticsForm" enctype="multipart/form-data" class="stagger-in">
+        <div class="form-group">
+          <label>Select Crop Type</label>
+          <select name="crop_type" id="cropType">
+            <option value="Rice">Rice</option>
+            <option value="Wheat">Wheat</option>
+            <option value="Maize">Maize</option>
+            <option value="Cotton">Cotton</option>
+            <option value="Sugarcane">Sugarcane</option>
+            <option value="Tomato">Tomato</option>
+            <option value="Potato">Potato</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Growth Stage</label>
+          <select name="growth_stage" id="growthStage">
+            <option value="Seedling">Seedling</option>
+            <option value="Vegetative">Vegetative</option>
+            <option value="Flowering">Flowering</option>
+            <option value="Fruiting">Fruiting</option>
+            <option value="Maturity">Maturity</option>
+          </select>
+        </div>
+        <div id="uploadZone" class="upload-zone" style="margin-bottom: 20px;">
+          <input type="file" id="imageInput" name="image" accept="image/*" required style="display:none">
+          <div class="upload-icon">📸</div>
+          <p id="fileName">Click or drop image here</p>
+        </div>
+        <button type="submit" id="analyzeBtn" class="btn btn-primary btn-block" disabled>Start Analysis</button>
+      </form>
+    </div>
+
+    <!-- Analysis Results -->
+    <div id="resultSection" class="result-section">
+      <div class="flex-between" style="margin-bottom: 24px;">
+        <div class="section-title" style="margin-bottom: 0;">📊 Analysis Report</div>
+        <button id="readReportBtn" class="btn btn-outline tts-btn hidden" onclick="speakElement('reportContent')" style="padding: 8px 16px;">
+          🔊 Read Section
+        </button>
+      </div>
+
+      <div id="reportContent" class="stagger-in">
+        <!-- Initial Placeholder State -->
+        <div id="resultsPlaceholder" class="empty-state" style="padding: 40px; background: rgba(255,255,255,0.02); border-radius: var(--radius); border: 1px dashed var(--border);">
+          <div class="empty-icon">📂</div>
+          <h3>Ready for Analysis</h3>
+          <p>The report will appear here once you upload an image.</p>
+        </div>
+
+        <div id="resultsContent" class="hidden">
+          <!-- Crop Health Overview -->
+          <div class="card status-card" id="healthCard" style="border-radius: 20px; overflow: hidden; margin-bottom: 24px; border: 1px solid rgba(255,255,255,0.1);">
+          <div class="card-header-accent" id="statusHeader"></div>
+          <div style="padding: 24px; position: relative;">
+            <div id="demoLabel" class="hidden demo-floating-badge">SIMULATED</div>
+            <div style="display: flex; align-items: center; gap: 24px;">
+              <div id="statusIcon" style="font-size: 3.5rem; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">🌿</div>
+              <div>
+                <h2 id="healthStatus" style="margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: -0.5px;">--</h2>
+                <div id="healthConf" style="opacity: 0.8; font-size: 1rem; margin-top: 4px; font-weight: 500;">--</div>
+              </div>
+            </div>
+            
+            <div id="cropMeta" style="margin-top: 24px; display: flex; gap: 12px;">
+              <span class="bubble-tag" id="metaType"></span>
+              <span class="bubble-tag" id="metaStage"></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="statsGrid" class="grid grid-2 hidden" style="gap: 24px;">
+          <!-- Image Quality Ring -->
+          <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 30px;">
+            <div class="circular-progress">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" class="bg-circle"></circle>
+                <circle cx="50" cy="50" r="45" id="scoreRing" class="fg-circle"></circle>
+              </svg>
+              <div class="inner-content">
+                <span id="scoreText">--</span>
+                <small>Quality</small>
+              </div>
+            </div>
+            <p style="margin-top: 24px; color: var(--text-dim); text-align: center; font-size: 0.9rem; line-height: 1.6;">
+              Automated image validation score. Scores above 70 indicate optimal accuracy.
+            </p>
+          </div>
+
+          <!-- Detailed Metrics -->
+          <div class="card" style="padding: 30px;">
+            <div class="metric-row">
+              <div class="flex-between"><span>Blur Variance</span> <span id="blurText" style="font-weight:700">--</span></div>
+              <div class="bar-bg"><div id="blurBar" class="bar-fg"></div></div>
+            </div>
+            <div class="metric-row">
+              <div class="flex-between"><span>Brightness</span> <span id="brightText" style="font-weight:700">--</span></div>
+              <div class="bar-bg"><div id="brightBar" class="bar-fg"></div></div>
+            </div>
+            <div class="metric-row">
+              <div class="flex-between"><span>Contrast</span> <span id="contrastText" style="font-weight:700">--</span></div>
+              <div class="bar-bg"><div id="contrastBar" class="bar-fg"></div></div>
+            </div>
+            
+            <div id="issueBox" class="hidden issue-panel">
+              <strong>⚠️ QUALITY WARNING</strong>
+              <div id="issueList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.demo-floating-badge {
+  position: absolute; top: 16px; right: 24px;
+  background: rgba(255,255,255,0.1); padding: 4px 10px;
+  border-radius: 100px; font-size: 0.65rem; font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px);
+  color: var(--primary);
+}
+.card-header-accent { height: 8px; width: 100%; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+.bubble-tag {
+  background: rgba(255,255,255,0.05); padding: 8px 16px;
+  border-radius: 100px; font-size: 0.85rem; font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-dim);
+}
+.circular-progress { position: relative; width: 150px; height: 150px; }
+.circular-progress svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+.bg-circle { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 8; }
+.fg-circle {
+  fill: none; stroke: var(--primary); stroke-width: 8;
+  stroke-linecap: round; stroke-dasharray: 283;
+  stroke-dashoffset: 283; transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s;
+}
+.inner-content {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  text-align: center;
+}
+.inner-content span { display: block; font-size: 2.2rem; font-weight: 800; line-height: 1; margin-bottom: 2px; }
+.inner-content small { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+.metric-row { margin-bottom: 24px; }
+.metric-row span:first-child { font-size: 0.85rem; color: var(--text-dim); }
+.bar-bg { margin-top: 8px; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; }
+.bar-fg { height: 100%; width: 0%; background: var(--primary); transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+.issue-panel {
+  margin-top: 24px; padding: 16px; border-radius: var(--radius-sm);
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+  color: #fca5a5;
+  animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+/* Status Colors */
+.status-Healthy .card-header-accent { background: #22c55e; box-shadow: 0 4px 20px rgba(34,197,94,0.4); }
+.status-Healthy h2 { color: #22c55e; }
+.status-Pests .card-header-accent { background: #f97316; box-shadow: 0 4px 20px rgba(249,115,22,0.4); }
+.status-Pests h2 { color: #f97316; }
+.status-Flood .card-header-accent { background: #3b82f6; box-shadow: 0 4px 20px rgba(59,130,246,0.4); }
+.status-Flood h2 { color: #3b82f6; }
+.status-Drought .card-header-accent { background: #eab308; box-shadow: 0 4px 20px rgba(234,179,8,0.4); }
+.status-Drought h2 { color: #eab308; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const uploadZone = document.getElementById('uploadZone');
+const imageInput = document.getElementById('imageInput');
+const fileName = document.getElementById('fileName');
+const analyzeBtn = document.getElementById('analyzeBtn');
+
+uploadZone.onclick = () => imageInput.click();
+imageInput.onchange = (e) => {
+  if (e.target.files[0]) {
+    fileName.innerHTML = `<span style="color:var(--primary); font-weight:600">📂 ${e.target.files[0].name}</span>`;
+    analyzeBtn.disabled = false;
+  }
+};
+
+document.getElementById('analyticsForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  
+  analyzeBtn.innerHTML = '<span class="loader-small"></span> Running AI Vision...';
+  analyzeBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/analytics', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('resultsPlaceholder').classList.add('hidden');
+      document.getElementById('resultsContent').classList.remove('hidden');
+      document.getElementById('statsGrid').classList.remove('hidden');
+      document.getElementById('readReportBtn').classList.remove('hidden');
+      renderResults(data);
+      document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } catch(err) {
+    console.error(err);
+  } finally {
+    analyzeBtn.innerText = 'Start Analysis';
+    analyzeBtn.disabled = false;
+  }
+};
+
+function renderResults(data) {
+  const { quality, health, crop_type, growth_stage } = data;
+  
+  // Quality Ring
+  const score = quality.metrics.quality_score;
+  const ring = document.getElementById('scoreRing');
+  const dashoffset = 283 - (283 * score / 100);
+  ring.style.strokeDashoffset = dashoffset;
+  document.getElementById('scoreText').innerText = Math.round(score);
+  ring.style.stroke = score > 70 ? '#22c55e' : score > 40 ? '#eab308' : '#ef4444';
+
+  // Bars
+  document.getElementById('blurBar').style.width = Math.min(100, (quality.metrics.blur_score/5)) + '%';
+  document.getElementById('blurText').innerText = Math.round(quality.metrics.blur_score);
+  document.getElementById('brightBar').style.width = (quality.metrics.brightness/255*100) + '%';
+  document.getElementById('brightText').innerText = Math.round(quality.metrics.brightness);
+  document.getElementById('contrastBar').style.width = Math.min(100, (quality.metrics.contrast/100*100)) + '%';
+  document.getElementById('contrastText').innerText = Math.round(quality.metrics.contrast);
+  
+  const issueBox = document.getElementById('issueBox');
+  const issueList = document.getElementById('issueList');
+  if (quality.issues.length > 0) {
+    issueBox.classList.remove('hidden');
+    issueList.innerHTML = quality.issues.map(i => `<div>• ${i}</div>`).join('');
+  } else {
+    issueBox.classList.add('hidden');
+  }
+
+  // Health Card
+  const healthCard = document.getElementById('healthCard');
+  const statusEl = document.getElementById('healthStatus');
+  const confEl = document.getElementById('healthConf');
+  const iconEl = document.getElementById('statusIcon');
+  
+  document.getElementById('metaType').innerText = '🌾 ' + crop_type;
+  document.getElementById('metaStage').innerText = '🌱 ' + growth_stage;
+
+  statusEl.innerText = health.status;
+  confEl.innerText = `AI Certainty: ${health.confidence.toFixed(1)}%`;
+  
+  healthCard.className = 'card status-card';
+  if (health.status.includes('Healthy')) { healthCard.classList.add('status-Healthy'); iconEl.innerHTML = '🌿'; }
+  else if (health.status.includes('Pests')) { healthCard.classList.add('status-Pests'); iconEl.innerHTML = '🐛'; }
+  else if (health.status.includes('Flood')) { healthCard.classList.add('status-Flood'); iconEl.innerHTML = '🌊'; }
+  else if (health.status.includes('Drought')) { healthCard.classList.add('status-Drought'); iconEl.innerHTML = '☀️'; }
+
+  if (health.is_demo) document.getElementById('demoLabel').classList.remove('hidden');
+  else document.getElementById('demoLabel').classList.add('hidden');
+}
+</script>
+{% endblock %}
